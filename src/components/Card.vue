@@ -1,6 +1,9 @@
 <script setup>
-defineProps({
+import { inject } from "vue";
+
+const props = defineProps({
   imageUrl: String,
+  id: Number,
   title: String,
   price: Number,
   isFavorite: Boolean,
@@ -18,7 +21,7 @@ defineProps({
       <img src="/like-1.svg" alt="Like 1" class="absolute top-8 left-8" />
       <img
         @click="onClickFavorite"
-        :src="isFavorite ? '/like-1.svg' : '/like-2.svg'"
+        :src="!isFavorite ? '/like-1.svg' : '/like-2.svg'"
         alt="Like"
         class="absolute top-8 left-8"
       />
