@@ -1,15 +1,44 @@
 <script setup>
+import { computed, inject, ref } from "vue";
 import CartItemList from "./CartItemList.vue";
 import DrawerHead from "./DrawerHead.vue";
 import InfoBlock from "./InfoBlock.vue";
+import axios from "axios";
+
+const { cart, closeDrawer } = inject("cart");
+
+const isCreating = ref(false);
+const orderId = ref(null);
+
+const cartIsEmpty = computed(() => cart.value.length === 0);
 
 const props = defineProps({
   totalPrice: Number,
   vatPrice: Number,
-  buttonDisabled: Boolean,
 });
 
-const emit = defineEmits(["createOrder"]);
+const buttonDisabled = computed(() => isCreating.value || cartIsEmpty.value);
+
+const createOrder = async () => {
+  try {
+    isCreating.value = true;
+    const { data } = await axios.post(
+      `https://9e47f1eaf145057c.mokky.dev/orders`,
+      {
+        items: cart.value,
+        totalPrice: props.totalPrice.value,
+      }
+    );
+
+    cart.value = [];
+
+    orderId.value = data.id;
+  } catch (e) {
+    console.log(e);
+  } finally {
+    isCreating.value = false;
+  }
+};
 </script>
 
 <template>
@@ -17,11 +46,18 @@ const emit = defineEmits(["createOrder"]);
   <div class="bg-white fixed w-96 h-full right-0 top-0 z-20 p-8">
     <DrawerHead />
 
-    <div v-if="!totalPrice" class="flex h-full items-center">
+    <div v-if="!totalPrice || orderId" class="flex h-full items-center">
       <InfoBlock
+        v-if="!totalPrice && !orderId"
         title="Корзина пуста"
         description="Добавьте хотя бы одну пару кроссовок, чтобы сделать заказ."
         image-url="/package-icon.png"
+      />
+      <InfoBlock
+        v-if="orderId"
+        title="Заказ оформлен!"
+        :description="`Ваш заказ #${orderId} скоро будет передан курьерской доставке`"
+        image-url="/order-success-icon.png"
       />
     </div>
 
@@ -41,7 +77,7 @@ const emit = defineEmits(["createOrder"]);
         </div>
         <button
           :disabled="buttonDisabled"
-          @click="() => emit('createOrder')"
+          @click="createOrder"
           class="transition mt-4 cursor-pointer disabled:bg-slate-300 bg-lime-500 w-full rounded-xl py-3 text-white hover:bg-lime-700"
         >
           Оформить заказ
